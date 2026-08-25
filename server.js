@@ -39,14 +39,11 @@ app.use(session({
 
 
 // =========================
-// STATIC FILES
+// STATIC FILES EXCLUSION
 // =========================
 
-app.use(
-    express.static(
-        path.join(__dirname, "public")
-    )
-);
+// Serves asset styles/images natively but shields raw root landing overrides
+app.use(express.static(path.join(__dirname, "public"), { index: false }));
 
 
 // =========================
@@ -57,7 +54,6 @@ const db = mysql.createPool({
 
     host: process.env.DB_HOST,
 
-    // FIX: Realigned to use your active DB_USER and DB_NAME dashboard keys flawlessly
     user: process.env.DB_USER,
 
     password: process.env.DB_PASSWORD,
@@ -327,7 +323,7 @@ app.post("/api/login", (req, res) => {
             }
 
 
-            const user = results;
+            const user = results[0];
 
 
             const passwordMatch =
@@ -589,20 +585,13 @@ app.post("/api/transactions", requireLogin, (req, res) => {
 });
 
 
-// =========================
-// CATCH-ALL ROUTE
-// =========================
+// ===============================================
+// NATIVE CONDITIONAL LANDING ROUTE (EXPRESS 5)
+// ===============================================
 
-app.get("/*path", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-
-// =========================
-// START SERVER
-// =========================
-
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
-});
+// Serves the authentic login page immediately if no active user exists
+app.get("/", (req, res) => {
+    if (req.session.userId) {
+        res.sendFile(path.join(__dirname, "public", "index.html"));
+    } else {
+        res.sendFile(path.join(__dirname, "public", "login.html"));

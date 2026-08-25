@@ -316,11 +316,13 @@ app.post("/api/transactions", requireLogin, (req, res) => {
 });
 
 
-// =========================
-// CATCH-ALL ROUTE (FALLBACK)
-// =========================
+// =====================================
+// CATCH-ALL ROUTE (FIXED FOR EXPRESS 5)
+// =====================================
 
-app.get("*", (req, res) => {
+// FIX: Express 5 requires named wildcard parameters or parameter reg-exes. 
+// This cleanly fulfills the wildcard mapping without changing any function logic.
+app.get("(.*)", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 

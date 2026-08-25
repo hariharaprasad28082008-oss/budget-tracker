@@ -11,6 +11,7 @@ const app = express();
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 app.use(session({
     secret: process.env.SESSION_SECRET || "fallback-production-encryption-secret-string-key",
     resave: false,
@@ -33,9 +34,9 @@ const db = mysql.createPool({
     ssl: process.env.DB_HOST && process.env.DB_HOST !== "localhost" ? { minVersion: "TLSv1.2", rejectUnauthorized: true } : null
 });
 
-db.getConnection((err, conn) => {
+db.getConnection((err, connection) => {
     if (err) { console.error("MySQL connection failed:", err.message); } 
-    else { console.log("MySQL connected successfully"); conn.release(); }
+    else { console.log("MySQL connected successfully"); connection.release(); }
 });
 
 function requireLogin(req, res, next) {
@@ -48,18 +49,20 @@ app.post("/api/signup", async (req, res) => {
     if (!name || !email || !password) { return res.status(400).json({ error: "Please fill all fields" }); }
     if (password.length < 6) { return res.status(400).json({ error: "Password must be at least 6 characters" }); }
 
-    const checkSql = "SELECT id FROM users WHERE email = ?";
-    db.query(checkSql, [email], async (err, results) => {
-        if (err) { console.error(err); return res.status(500).json({ error: "Database error" }); }
-        if (results && results.length > 0) { return res.status(400).json({ error: "Email already registered" }); }
+    try {
+        const checkSql = "SELECT id FROM users WHERE email = ?";
+        db.query(checkSql, [email], async (err, results) => {
+            if (err) { console.error(err); return res.status(500).json({ error: "Database error" }); }
+            if (results && results.length > 0) { return res.status(400).json({ error: "Email already registered" }); }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const insertSql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
-        db.query(insertSql, [name, email, hashedPassword], (err, result) => {
-            if (err) { console.error(err); return res.status(500).json({ error: "Failed to create account" }); }
-            res.json({ message: "Account created successfully", userId: result.insertId });
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const insertSql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
+            db.query(insertSql, [name, email, hashedPassword], (err, result) => {
+                if (err) { console.error(err); return res.status(500).json({ error: "Failed to create account" }); }
+                res.json({ message: "Account created successfully", userId: result.insertId });
+            });
         });
-    });
+    } catch (error) { console.error(error); res.status(500).json({ error: "Server error" }); }
 });
 
 app.post("/api/login", (req, res) => {
@@ -71,7 +74,7 @@ app.post("/api/login", (req, res) => {
         if (err) { console.error(err); return res.status(500).json({ error: "Database error" }); }
         if (!results || results.length === 0) { return res.status(401).json({ error: "Invalid email or password" }); }
 
-        const user = results[0]; // FIXED: Proper array indexing for pool rows
+        const user = results[0]; // FIXED: Extracts user correctly from the database row collection matrix
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ error: "Invalid email or password" });
         }
@@ -139,8 +142,9 @@ app.get("/api/summary", requireLogin, (req, res) => {
     const sql = "SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS totalIncome, COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS totalExpense FROM transactions WHERE user_id = ?";
     db.query(sql, [req.session.userId], (err, results) => {
         if (err) { console.error(err); return res.status(500).json({ error: "Failed to calculate summary" }); }
-        const totalIncome = Number(results[0]?.totalIncome || 0);
-        const totalExpense = Number(results[0]?.totalExpense || 0);
+        const row = results[0] || {};
+        const totalIncome = Number(row.totalIncome || 0);
+        const totalExpense = Number(row.totalExpense || 0);
         res.json({ totalIncome, totalExpense, balance: totalIncome - totalExpense });
     });
 });
@@ -169,8 +173,3 @@ app.get("/*path", (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });
-
-                description || "",
-
-                amount,
-

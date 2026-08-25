@@ -74,10 +74,12 @@ app.post("/api/login", (req, res) => {
         if (err) { console.error(err); return res.status(500).json({ error: "Database error" }); }
         if (!results || results.length === 0) { return res.status(401).json({ error: "Invalid email or password" }); }
 
-        const user = results[0]; // FIXED: Extracts user correctly from the database row collection matrix
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ error: "Invalid email or password" });
-        }
+        // FIX: Safely extract the single user object from the pool row array results
+        const user = results[0]; 
+        if (!user || !user.password) { return res.status(401).json({ error: "Invalid email or password" }); }
+
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) { return res.status(401).json({ error: "Invalid email or password" }); }
 
         req.session.userId = user.id;
         req.session.userName = user.name;

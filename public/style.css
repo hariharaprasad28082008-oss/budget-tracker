@@ -1,0 +1,297 @@
+* {
+    box-sizing: border-box;
+}
+
+
+body {
+
+    background: #f5f7fa;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+}
+
+
+.navbar {
+
+    box-shadow:
+        0 2px 8px
+        rgba(0, 0, 0, 0.15);
+
+}
+
+
+.navbar-brand {
+
+    font-size: 1.2rem;
+
+}
+
+
+.summary-card {
+
+    border: none;
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 3px 12px
+        rgba(0, 0, 0, 0.08);
+
+    transition:
+        transform 0.2s;
+
+}
+
+
+.summary-card:hover {
+
+    transform:
+        translateY(-3px);
+
+}
+
+
+.summary-card h5 {
+
+    color: #666;
+
+    font-size: 16px;
+
+}
+
+
+.summary-card h2 {
+
+    margin-top: 10px;
+
+    font-weight: bold;
+
+}
+
+
+.card {
+
+    border: none;
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 3px 12px
+        rgba(0, 0, 0, 0.08);
+
+}
+
+
+.card-header {
+
+    background: white;
+
+    border-bottom:
+        1px solid #eee;
+
+    padding: 18px;
+
+}
+
+
+.card-body {
+
+    padding: 20px;
+
+}
+
+
+.form-control,
+.form-select {
+
+    padding: 10px;
+
+    border-radius: 8px;
+
+}
+
+
+.btn {
+
+    border-radius: 8px;
+
+}
+
+
+.income {
+
+    color: #198754;
+
+    font-weight: bold;
+
+}
+
+
+.expense {
+
+    color: #dc3545;
+
+    font-weight: bold;
+
+}
+
+
+/* =========================
+   PIE CHART
+========================= */
+
+.chart-container {
+
+    position: relative;
+
+    width: 100%;
+
+    max-width: 500px;
+
+    height: 400px;
+
+    margin:
+        0 auto;
+
+}
+
+
+#expenseChart {
+
+    width:
+        100% !important;
+
+    height:
+        100% !important;
+
+}
+
+
+/* =========================
+   LOGIN / SIGNUP
+========================= */
+
+.auth-page {
+
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #eef2ff,
+            #f8f9fa
+        );
+
+}
+
+
+.auth-card {
+
+    width: 100%;
+
+    max-width: 420px;
+
+    background: white;
+
+    padding: 35px;
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 5px 25px
+        rgba(0, 0, 0, 0.12);
+
+}
+
+
+.auth-card h2 {
+
+    font-weight: bold;
+
+}
+
+
+.auth-card a {
+
+    text-decoration: none;
+
+    font-weight: 600;
+
+}
+
+
+.logo-icon {
+
+    font-size: 45px;
+
+    margin-bottom: 5px;
+
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 768px) {
+
+    .container {
+
+        padding-left: 15px;
+
+        padding-right: 15px;
+
+    }
+
+
+    .navbar .container {
+
+        flex-wrap: wrap;
+
+    }
+
+
+    #welcomeUser {
+
+        display: none;
+
+    }
+
+
+    .chart-container {
+
+        height: 300px;
+
+    }
+
+
+    table {
+
+        font-size: 14px;
+
+    }
+   .chart-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    height: 400px;
+    margin: auto;
+    }
+
+    #expenseChart {
+    width: 100% !important;
+    height: 100% !important;
+    }
+}

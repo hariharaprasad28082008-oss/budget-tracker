@@ -326,7 +326,7 @@ app.post("/api/login", (req, res) => {
             }
 
 
-            const user = results[0];
+            const user = results;
 
 
             const passwordMatch =
@@ -514,6 +514,96 @@ app.get(
 
     }
 );
+
+
+// =========================
+// ADD TRANSACTION (FIXED BRACKET LOGIC)
+// =========================
+
+app.post(
+    "/api/transactions",
+    requireLogin,
+    (req, res) => {
+
+        const {
+            type,
+            category,
+            description,
+            amount,
+            transaction_date
+        } = req.body;
+
+
+        if (
+            !type ||
+            !category ||
+            !amount ||
+            !transaction_date
+        ) {
+
+            return res.status(400).json({
+
+                error:
+                    "Please fill all required fields"
+
+            });
+
+        }
+
+
+        if (
+            type !== "income" &&
+            type !== "expense"
+        ) {
+
+            return res.status(400).json({
+
+                error:
+                    "Invalid transaction type"
+
+            });
+
+        }
+
+
+        const sql = `
+            INSERT INTO transactions
+            (
+                user_id,
+                type,
+                category,
+                description,
+                amount,
+                transaction_date
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        `;
+
+
+        db.query(
+            sql,
+            [
+                req.session.userId,
+                type,
+                category,
+                description || "",
+                amount,
+                transaction_date
+            ],
+            (err, result) => {
+
+                if (err) {
+
+                    console.error(err);
+
+                    return res.status(500).json({
+
+                        error:
+                            "Failed to add transaction"
+
+                    });
+
+                }
 
 
 // =========================

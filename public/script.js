@@ -96,7 +96,7 @@ document.addEventListener(
 
 
 // ===============================
-// CHECK LOGIN (FIXED INFINITE LOOP)
+// CHECK LOGIN
 // ===============================
 
 async function checkUser() {
@@ -113,7 +113,8 @@ async function checkUser() {
 
 
         if (!response.ok) {
-            // FIX: If the user is unauthenticated, redirect them directly to your standalone login file
+
+            // FIX: Redirect directly to the static HTML page file to bypass wildcard loop intercepts
             window.location.href = "/login.html";
 
             return false;
@@ -146,8 +147,10 @@ async function checkUser() {
             error
         );
 
-        // FIX: Prevent local crash network loop reloads
+
+        // FIX: Redirect directly to the static HTML page file to bypass wildcard loop intercepts
         window.location.href = "/login.html";
+
 
         return false;
     }
@@ -260,6 +263,7 @@ if (form) {
                     response.status === 401
                 ) {
 
+                    // FIX: Redirect directly to the static HTML page file to bypass wildcard loop intercepts
                     window.location.href = "/login.html";
 
                     return;
@@ -352,6 +356,7 @@ async function loadTransactions() {
             response.status === 401
         ) {
 
+            // FIX: Redirect directly to the static HTML page file to bypass wildcard loop intercepts
             window.location.href = "/login.html";
 
             return;
@@ -442,11 +447,86 @@ async function loadTransactions() {
 
 
                     <td>
-                        <span>${transaction.category}</span>
+
+                        ${escapeHTML(
+                            transaction.category
+                        )}
+
                     </td>
+
+
+                    <td>
+
+                        ${escapeHTML(
+                            transaction.description || ""
+                        )}
+
+                    </td>
+
+
+                    <td
+                        class="${typeClass}">
+
+                        ${sign} ₹${amount}
+
+                    </td>
+
+
+                    <td>
+
+                        ${transaction.transaction_date}
+
+                    </td>
+
+
+                    <td>
+
+                        <button
+                            class="btn btn-sm btn-danger"
+                            onclick="deleteTransaction(${transaction.id})">
+
+                            Delete
+
+                        </button>
+
+                    </td>
+
                 `;
+
+
+                transactionTable.appendChild(
+                    row
+                );
+
             }
         );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Transaction loading error:",
+            error
+        );
+
+    }
+}
+
+
+// ===============================
+// LOAD SUMMARY
+// ===============================
+
+async function loadSummary() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/summary",
+                {
+
     } catch (e) {
         console.error(e);
     }

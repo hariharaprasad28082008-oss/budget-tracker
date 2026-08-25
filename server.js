@@ -26,7 +26,8 @@ app.use(express.urlencoded({
 }));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || "fallback-secret-key",
+    // FIX: Resolves the 'secret option required' session crash if process.env.SESSION_SECRET is blank
+    secret: process.env.SESSION_SECRET || "fallback-production-encryption-secret-string-key",
     resave: false,
     saveUninitialized: false,
 
@@ -39,11 +40,14 @@ app.use(session({
 
 
 // =========================
-// STATIC FILES 
+// STATIC FILES
 // =========================
 
-// FIX: Delivered natively at the top of the stack so script.js, style.css, and static views resolve cleanly
-app.use(express.static(path.join(__dirname, "public")));
+app.use(
+    express.static(
+        path.join(__dirname, "public")
+    )
+);
 
 
 // =========================
@@ -67,7 +71,8 @@ const db = mysql.createPool({
     connectionLimit: 10,
 
     queueLimit: 0,
-
+    
+    // FIX: Enforces secure TLS 1.2 handshakes to solve the 'insecure transport prohibited' error on TiDB Cloud
     ssl: process.env.DB_HOST && process.env.DB_HOST !== "localhost" ? {
         minVersion: "TLSv1.2",
         rejectUnauthorized: true
@@ -323,7 +328,7 @@ app.post("/api/login", (req, res) => {
             }
 
 
-            const user = results;
+            const user = results[0];
 
 
             const passwordMatch =
@@ -517,80 +522,96 @@ app.get(
 // ADD TRANSACTION
 // =========================
 
-app.post("/api/transactions", requireLogin, (req, res) => {
+app.post(
+    "/api/transactions",
+    requireLogin,
+    (req, res) => {
 
-    const {
-        type,
-        category,
-        description,
-        amount,
-        transaction_date
-    } = req.body;
+        const {
 
-
-    if (!type || !category || !amount || !transaction_date) {
-
-        return res.status(400).json({
-
-            error: "Please fill all required fields"
-
-        });
-
-    }
-
-
-    const sql = `
-        INSERT INTO transactions
-        (user_id, type, category, description, amount, transaction_date)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `;
-
-
-    db.query(
-        sql,
-        [
-            req.session.userId,
             type,
+
             category,
+
             description,
+
             amount,
+
             transaction_date
-        ],
-        (err, result) => {
 
-            if (err) {
-
-                console.error(err);
-
-                return res.status(500).json({
-
-                    error: "Failed to add transaction"
-
-                });
-
-            }
+        } = req.body;
 
 
-            res.json({
+        if (
+            !type ||
+            !category ||
+            !amount ||
+            !transaction_date
+        ) {
 
-                message: "Transaction added successfully",
+            return res.status(400).json({
 
-                transactionId: result.insertId
+                error:
+                    "Please fill all required fields"
 
             });
 
         }
-    );
-
-});
 
 
-// ==========================================
-// CATCH-ALL ROUTE (FIXED RENDERING FLOW)
-// ==========================================
+        if (
+            type !== "income" &&
+            type !== "expense"
+        ) {
 
-// FIX: Verifies user session dynamically at the entry layout root node
-app.get("/", (req, res) => {
-    if (req.session.userId) {
-        res.sendFile(path.join(__dirname, "public", "index.html"));
-    } else {
+            return res.status(400).json({
+
+                error:
+                    "Invalid transaction type"
+
+            });
+
+        }
+
+
+        const sql = `
+
+            INSERT INTO transactions
+            (
+                user_id,
+                type,
+                category,
+                description,
+                amount,
+                transaction_date
+            )
+
+            VALUES (?, ?, ?, ?, ?, ?)
+
+        `;
+
+
+        db.query(
+
+            sql,
+
+            [
+
+                req.session.userId,
+
+                type,
+
+                category,
+
+                description || "",
+
+                amount,
+
+                transaction_date
+
+            ],
+
+            (err, result) => {
+
+                if (err) {
+

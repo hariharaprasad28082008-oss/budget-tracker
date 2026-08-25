@@ -27,12 +27,10 @@ app.use(express.urlencoded({
 }));
 
 app.use(session({
-    // FIX: Fallback string prevents crashing if SESSION_SECRET environment variable is missing
     secret: process.env.SESSION_SECRET || "fallback-local-development-secret-key",
     resave: false,
     saveUninitialized: false,
     cookie: {
-        // FIX: secure must be true on Render (HTTPS) to prevent session validation issues
         secure: isProduction,
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000
@@ -64,7 +62,6 @@ const db = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    // FIX: Enforces secure TLS connection to resolve the 'insecure transport prohibited' error on TiDB Cloud
     ssl: process.env.DB_HOST && process.env.DB_HOST !== "localhost" ? {
         minVersion: "TLSv1.2",
         rejectUnauthorized: true
@@ -186,13 +183,13 @@ app.post("/api/login", (req, res) => {
             });
         }
 
-        if (results.length === 0) {
+        if (!results || results.length === 0) {
             return res.status(401).json({
                 error: "Invalid email or password"
             });
         }
 
-        const user = results[0];
+        const user = results[0]; 
         const passwordMatch = await bcrypt.compare(password, user.password);
 
         if (!passwordMatch) {

@@ -114,8 +114,7 @@ async function checkUser() {
 
         if (!response.ok) {
 
-            // FIX: Redirect directly to the static HTML page file to bypass wildcard loop intercepts
-            window.location.href = "/login.html";
+            window.location.href = "/login";
 
             return false;
         }
@@ -148,8 +147,8 @@ async function checkUser() {
         );
 
 
-        // FIX: Redirect directly to the static HTML page file to bypass wildcard loop intercepts
-        window.location.href = "/login.html";
+        window.location.href =
+            "/login";
 
 
         return false;
@@ -263,8 +262,8 @@ if (form) {
                     response.status === 401
                 ) {
 
-                    // FIX: Redirect directly to the static HTML page file to bypass wildcard loop intercepts
-                    window.location.href = "/login.html";
+                    window.location.href =
+                        "/login";
 
                     return;
                 }
@@ -356,8 +355,8 @@ async function loadTransactions() {
             response.status === 401
         ) {
 
-            // FIX: Redirect directly to the static HTML page file to bypass wildcard loop intercepts
-            window.location.href = "/login.html";
+            window.location.href =
+                "/login";
 
             return;
         }
@@ -526,8 +525,626 @@ async function loadSummary() {
             await fetch(
                 "/api/summary",
                 {
+                    credentials:
+                        "include"
+                }
+            );
 
-    } catch (e) {
-        console.error(e);
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.href =
+                "/login";
+
+            return;
+        }
+
+
+        const data =
+            await response.json();
+
+
+        const income =
+            Number(
+                data.totalIncome || 0
+            );
+
+
+        const expense =
+            Number(
+                data.totalExpense || 0
+            );
+
+
+        const currentBalance =
+            Number(
+                data.balance || 0
+            );
+
+
+        // Income
+
+        totalIncome.textContent =
+            "₹" +
+            income.toFixed(2);
+
+
+        // Expense
+
+        totalExpense.textContent =
+            "₹" +
+            expense.toFixed(2);
+
+
+        // Balance
+
+        balance.textContent =
+            "₹" +
+            currentBalance.toFixed(2);
+
+
+        // Balance color
+
+        if (
+            currentBalance < 0
+        ) {
+
+            balance.classList.remove(
+                "text-success"
+            );
+
+            balance.classList.add(
+                "text-danger"
+            );
+
+        }
+
+        else {
+
+            balance.classList.remove(
+                "text-danger"
+            );
+
+            balance.classList.add(
+                "text-success"
+            );
+
+        }
+
     }
+
+    catch (error) {
+
+        console.error(
+            "Summary error:",
+            error
+        );
+
+    }
+}
+
+
+// ===============================
+// LOAD EXPENSE PIE CHART
+// ===============================
+
+async function loadExpenseChart() {
+
+    console.log(
+        "Loading expense chart..."
+    );
+
+
+    const canvas =
+        document.getElementById(
+            "expenseChart"
+        );
+
+
+    // Check canvas
+
+    if (!canvas) {
+
+        console.error(
+            "ERROR: expenseChart canvas not found!"
+        );
+
+        return;
+    }
+
+
+    // Check Chart.js
+
+    if (
+        typeof Chart === "undefined"
+    ) {
+
+        console.error(
+            "ERROR: Chart.js is not loaded!"
+        );
+
+
+        if (chartMessage) {
+
+            chartMessage.style.display =
+                "block";
+
+            chartMessage.textContent =
+                "Chart.js failed to load.";
+
+        }
+
+        return;
+    }
+
+
+    console.log(
+        "Chart.js loaded successfully."
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/expense-chart",
+                {
+                    credentials:
+                        "include"
+                }
+            );
+
+
+        console.log(
+            "Expense chart API status:",
+            response.status
+        );
+
+
+        // Login expired
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.href =
+                "/login";
+
+            return;
+        }
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Expense chart data:",
+            data
+        );
+
+
+        if (!response.ok) {
+
+            if (chartMessage) {
+
+                chartMessage.style.display =
+                    "block";
+
+                chartMessage.textContent =
+                    data.error ||
+                    "Unable to load chart.";
+
+            }
+
+            return;
+        }
+
+
+        // Destroy previous chart
+
+        if (expenseChart) {
+
+            expenseChart.destroy();
+
+            expenseChart = null;
+
+        }
+
+
+        // No expenses
+
+        if (
+            !data ||
+            data.length === 0
+        ) {
+
+            canvas.style.display =
+                "none";
+
+
+            if (chartMessage) {
+
+                chartMessage.style.display =
+                    "block";
+
+                chartMessage.textContent =
+                    "Add an expense to see your pie chart.";
+
+            }
+
+
+            console.log(
+                "No expense data available."
+            );
+
+
+            return;
+        }
+
+
+        // Show canvas
+
+        canvas.style.display =
+            "block";
+
+
+        if (chartMessage) {
+
+            chartMessage.style.display =
+                "none";
+
+        }
+
+
+        // ===========================
+        // CHART LABELS
+        // ===========================
+
+        const labels =
+            data.map(
+                function (item) {
+
+                    return item.category;
+
+                }
+            );
+
+
+        // ===========================
+        // CHART VALUES
+        // ===========================
+
+        const values =
+            data.map(
+                function (item) {
+
+                    return Number(
+                        item.total
+                    );
+
+                }
+            );
+
+
+        console.log(
+            "Chart labels:",
+            labels
+        );
+
+
+        console.log(
+            "Chart values:",
+            values
+        );
+
+
+        // ===========================
+        // PIE CHART
+        // ===========================
+
+        expenseChart =
+            new Chart(
+                canvas,
+                {
+
+                    type: "pie",
+
+
+                    data: {
+
+                        labels: labels,
+
+
+                        datasets: [
+
+                            {
+
+                                label:
+                                    "Expenses",
+
+
+                                data:
+                                    values,
+
+
+                                // Different colors
+
+                                backgroundColor: [
+
+                                    "#ff6384",
+
+                                    "#36a2eb",
+
+                                    "#ffcd56",
+
+                                    "#4bc0c0",
+
+                                    "#9966ff",
+
+                                    "#ff9f40",
+
+                                    "#36a854",
+
+                                    "#e74c3c",
+
+                                    "#8e44ad",
+
+                                    "#16a085"
+
+                                ],
+
+
+                                borderColor:
+                                    "#ffffff",
+
+
+                                borderWidth:
+                                    2
+
+                            }
+
+                        ]
+
+                    },
+
+
+                    options: {
+
+                        responsive:
+                            true,
+
+
+                        maintainAspectRatio:
+                            false,
+
+
+                        plugins: {
+
+                            legend: {
+
+                                display:
+                                    true,
+
+                                position:
+                                    "bottom"
+
+                            },
+
+
+                            tooltip: {
+
+                                callbacks: {
+
+                                    label:
+                                        function (
+                                            context
+                                        ) {
+
+                                            const amount =
+                                                Number(
+                                                    context.raw
+                                                ).toFixed(
+                                                    2
+                                                );
+
+
+                                            return (
+                                                context.label +
+                                                ": ₹" +
+                                                amount
+                                            );
+
+                                        }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+        console.log(
+            "Pie chart created successfully!"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "PIE CHART ERROR:",
+            error
+        );
+
+
+        if (chartMessage) {
+
+            chartMessage.style.display =
+                "block";
+
+            chartMessage.textContent =
+                "Error loading pie chart.";
+
+        }
+
+    }
+}
+
+
+// ===============================
+// DELETE TRANSACTION
+// ===============================
+
+async function deleteTransaction(id) {
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to delete this transaction?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/transactions/${id}`,
+                {
+
+                    method:
+                        "DELETE",
+
+                    credentials:
+                        "include"
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        // Login expired
+
+        if (
+            response.status === 401
+        ) {
+
+            window.location.href =
+                "/login";
+
+            return;
+        }
+
+
+        if (!response.ok) {
+
+            alert(
+                data.error ||
+                "Failed to delete transaction."
+            );
+
+            return;
+        }
+
+
+        alert(
+            "Transaction deleted successfully!"
+        );
+
+
+        // Refresh dashboard
+
+        await loadTransactions();
+
+        await loadSummary();
+
+        await loadExpenseChart();
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Delete error:",
+            error
+        );
+
+
+        alert(
+            "Server connection failed."
+        );
+
+    }
+}
+
+
+// ===============================
+// LOGOUT
+// ===============================
+
+async function logout() {
+
+    try {
+
+        await fetch(
+            "/api/logout",
+            {
+
+                method:
+                    "POST",
+
+                credentials:
+                    "include"
+
+            }
+        );
+
+
+        window.location.href =
+            "/login";
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Logout error:",
+            error
+        );
+
+    }
+}
+
+
+// ===============================
+// ESCAPE HTML
+// ===============================
+
+function escapeHTML(value) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        value;
+
+
+    return div.innerHTML;
 }

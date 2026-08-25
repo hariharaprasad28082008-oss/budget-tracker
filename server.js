@@ -326,7 +326,7 @@ app.post("/api/login", (req, res) => {
             }
 
 
-            const user = results[0];
+            const user = results;
 
 
             const passwordMatch =
@@ -588,13 +588,12 @@ app.post("/api/transactions", requireLogin, (req, res) => {
 });
 
 
-// =====================================
-// CATCH-ALL ROUTE (EXPRESS 5 COMPLIANT)
-// =====================================
+// ==========================================
+// CATCH-ALL ROUTE (FIXED FOR PATH-TO-REGEXP V8)
+// ==========================================
 
-// FIX: Express 5 requires a named string parameter with a modifier for generic catch-alls.
-// This preserves 100% of your frontend routing logic without breaking the Express parser.
-app.get("/:path*", (req, res) => {
+// FIX: path-to-regexp v8 specifies global catch-all routing via "/*path" instead of "/:path*"
+app.get("/*path", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
@@ -603,8 +602,5 @@ app.get("/:path*", (req, res) => {
 // START SERVER
 // =========================
 
-
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});

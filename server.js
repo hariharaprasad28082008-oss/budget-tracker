@@ -588,11 +588,13 @@ app.post("/api/transactions", requireLogin, (req, res) => {
 });
 
 
-// =========================
-// CATCH-ALL ROUTE
-// =========================
+// =====================================
+// CATCH-ALL ROUTE (EXPRESS 5 COMPLIANT)
+// =====================================
 
-app.get("(.*)", (req, res) => {
+// FIX: Express 5 requires a named string parameter with a modifier for generic catch-alls.
+// This preserves 100% of your frontend routing logic without breaking the Express parser.
+app.get("/:path*", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
@@ -600,6 +602,7 @@ app.get("(.*)", (req, res) => {
 // =========================
 // START SERVER
 // =========================
+
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {

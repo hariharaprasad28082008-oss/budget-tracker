@@ -9,11 +9,7 @@ require("dotenv").config();
 
 const app = express();
 
-// Middleware Frameworks
-app.use(cors({
-    origin: true,
-    credentials: true
-}));
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -28,10 +24,8 @@ app.use(session({
     }
 }));
 
-// Static Assets Layer
 app.use(express.static(path.join(__dirname, "public")));
 
-// Database Connection Cluster
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -63,7 +57,6 @@ function requireLogin(req, res, next) {
     next();
 }
 
-// User Registration
 app.post("/api/signup", async (req, res) => {
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
@@ -80,7 +73,7 @@ app.post("/api/signup", async (req, res) => {
                 console.error(err);
                 return res.status(500).json({ error: "Database error" });
             }
-            if (results.length > 0) {
+            if (results && results.length > 0) {
                 return res.status(400).json({ error: "Email already registered" });
             }
 
@@ -100,7 +93,6 @@ app.post("/api/signup", async (req, res) => {
     }
 });
 
-// Authentication Login
 app.post("/api/login", (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -117,7 +109,7 @@ app.post("/api/login", (req, res) => {
             return res.status(401).json({ error: "Invalid email or password" });
         }
 
-        const user = results[0];
+        const user = results[0]; // Fixed row extraction mapping matrix arrays
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
             return res.status(401).json({ error: "Invalid email or password" });
@@ -134,7 +126,6 @@ app.post("/api/login", (req, res) => {
     });
 });
 
-// Authentication Logout
 app.post("/api/logout", (req, res) => {
     req.session.destroy((err) => {
         if (err) {
@@ -145,7 +136,6 @@ app.post("/api/logout", (req, res) => {
     });
 });
 
-// Profile Lookup
 app.get("/api/me", (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ loggedIn: false });
@@ -156,7 +146,6 @@ app.get("/api/me", (req, res) => {
     });
 });
 
-// Transaction Fetching
 app.get("/api/transactions", requireLogin, (req, res) => {
     const sql = "SELECT id, type, category, description, amount, DATE_FORMAT(transaction_date, '%Y-%m-%d') AS transaction_date FROM transactions WHERE user_id = ? ORDER BY transaction_date DESC, id DESC";
     db.query(sql, [req.session.userId], (err, results) => {
@@ -168,7 +157,6 @@ app.get("/api/transactions", requireLogin, (req, res) => {
     });
 });
 
-// Transaction Addition
 app.post("/api/transactions", requireLogin, (req, res) => {
     const { type, category, description, amount, transaction_date } = req.body;
     if (!type || !category || !amount || !transaction_date) {
@@ -188,7 +176,6 @@ app.post("/api/transactions", requireLogin, (req, res) => {
     });
 });
 
-// Transaction Deletion
 app.delete("/api/transactions/:id", requireLogin, (req, res) => {
     const sql = "DELETE FROM transactions WHERE id = ? AND user_id = ?";
     db.query(sql, [req.params.id, req.session.userId], (err, result) => {
@@ -203,7 +190,6 @@ app.delete("/api/transactions/:id", requireLogin, (req, res) => {
     });
 });
 
-// Transaction Modification
 app.put("/api/transactions/:id", requireLogin, (req, res) => {
     const { type, category, description, amount, transaction_date } = req.body;
     const sql = "UPDATE transactions SET type = ?, category = ?, description = ?, amount = ?, transaction_date = ? WHERE id = ? AND user_id = ?";
@@ -219,7 +205,6 @@ app.put("/api/transactions/:id", requireLogin, (req, res) => {
     });
 });
 
-// Metric Totals Summary
 app.get("/api/summary", requireLogin, (req, res) => {
     const sql = "SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS totalIncome, COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS totalExpense FROM transactions WHERE user_id = ?";
     db.query(sql, [req.session.userId], (err, results) => {
@@ -227,8 +212,8 @@ app.get("/api/summary", requireLogin, (req, res) => {
             console.error(err);
             return res.status(500).json({ error: "Failed to calculate summary" });
         }
-        const totalIncome = Number(results[0].totalIncome || 0);
-        const totalExpense = Number(results[0].totalExpense || 0);
+        const totalIncome = Number(results[0]?.totalIncome || 0);
+        const totalExpense = Number(results[0]?.totalExpense || 0);
         res.json({
             totalIncome,
             totalExpense,
@@ -237,7 +222,6 @@ app.get("/api/summary", requireLogin, (req, res) => {
     });
 });
 
-// Expense Chart Matrix
 app.get("/api/expense-chart", requireLogin, (req, res) => {
     const sql = "SELECT category, SUM(amount) AS total FROM transactions WHERE user_id = ? AND type = 'expense' GROUP BY category ORDER BY total DESC";
     db.query(sql, [req.session.userId], (err, results) => {
@@ -249,7 +233,6 @@ app.get("/api/expense-chart", requireLogin, (req, res) => {
     });
 });
 
-// Interface Page Handlers
 app.get("/", (req, res) => {
     if (req.session.userId) {
         return res.sendFile(path.join(__dirname, "public", "index.html"));
@@ -273,27 +256,7 @@ app.get("/*path", (req, res) => {
     }
 });
 
-// Server Initialization
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-
-
-app.get("/api/expense-chart", requireLogin, (req, res) => {
-    db.query("SELECT category, SUM(amount) AS total FROM transactions WHERE user_id = ? AND type = 'expense' GROUP BY category ORDER BY total DESC", [req.session.userId], (err, results) => {
-        if (err) return res.status(500).json({ error: "Chart loading failed" });
-        res.json(results);
-    });
-});
-
-const sendFile = (file) => (req, res) => res.sendFile(path.join(__dirname, "public", file));
-const serveIndexOrLogin = (req, res) => req.session.userId ? res.sendFile(path.join(__dirname, "public", "index.html")) : res.sendFile(path.join(__dirname, "public", "login.html"));
-
-app.get("/", serveIndexOrLogin);
-app.get("/login", sendFile("login.html"));
-app.get("/signup", sendFile("signup.html"));
-app.get("/*path", serveIndexOrLogin);
-
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server live on ${PORT}`));

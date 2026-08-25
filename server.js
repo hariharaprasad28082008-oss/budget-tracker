@@ -39,11 +39,11 @@ app.use(session({
 
 
 // =========================
-// STATIC FILES EXCLUSION
+// STATIC FILES 
 // =========================
 
-// Serves asset styles/images natively but shields raw root landing overrides
-app.use(express.static(path.join(__dirname, "public"), { index: false }));
+// FIX: Delivered natively at the top of the stack so script.js, style.css, and static views resolve cleanly
+app.use(express.static(path.join(__dirname, "public")));
 
 
 // =========================
@@ -323,7 +323,7 @@ app.post("/api/login", (req, res) => {
             }
 
 
-            const user = results[0];
+            const user = results;
 
 
             const passwordMatch =
@@ -585,13 +585,12 @@ app.post("/api/transactions", requireLogin, (req, res) => {
 });
 
 
-// ===============================================
-// NATIVE CONDITIONAL LANDING ROUTE (EXPRESS 5)
-// ===============================================
+// ==========================================
+// CATCH-ALL ROUTE (FIXED RENDERING FLOW)
+// ==========================================
 
-// Serves the authentic login page immediately if no active user exists
+// FIX: Verifies user session dynamically at the entry layout root node
 app.get("/", (req, res) => {
     if (req.session.userId) {
         res.sendFile(path.join(__dirname, "public", "index.html"));
     } else {
-        res.sendFile(path.join(__dirname, "public", "login.html"));

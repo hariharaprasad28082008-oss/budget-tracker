@@ -26,8 +26,7 @@ app.use(express.urlencoded({
 }));
 
 app.use(session({
-    // FIX: Fallback string added to solve 'Error: secret option required for sessions' when process.env.SESSION_SECRET is empty
-    secret: process.env.SESSION_SECRET || "production-fallback-session-encryption-string-key",
+    secret: process.env.SESSION_SECRET || "fallback-secret-key",
     resave: false,
     saveUninitialized: false,
 
@@ -58,11 +57,12 @@ const db = mysql.createPool({
 
     host: process.env.DB_HOST,
 
-    user: process.env.DB_USER,
+    // Mapped to match your custom Render environment keys exactly
+    user: process.env.DB_USERNAME,
 
     password: process.env.DB_PASSWORD,
 
-    database: process.env.DB_NAME,
+    database: process.env.DB_DATABASE,
 
     port: process.env.DB_PORT || 3306,
 
@@ -72,7 +72,7 @@ const db = mysql.createPool({
 
     queueLimit: 0,
 
-    // FIX: Configures TLS 1.2+ parameters to solve 'Connections using insecure transport are prohibited' on TiDB Cloud
+    // Forces secure TLS 1.2+ parameters required by TiDB Cloud clusters
     ssl: process.env.DB_HOST && process.env.DB_HOST !== "localhost" ? {
         minVersion: "TLSv1.2",
         rejectUnauthorized: true
@@ -590,19 +590,13 @@ app.post("/api/transactions", requireLogin, (req, res) => {
 });
 
 
-// =========================
-// CATCH-ALL ROUTE
-// =========================
+// ==========================================
+// CATCH-ALL ROUTE (EXPRESS 5 COMPLIANT)
+// ==========================================
 
+// Configured securely to compile wildcard routes flawlessly under Node v24
 app.get("/*path", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 
-// =========================
-// START SERVER
-
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
-});

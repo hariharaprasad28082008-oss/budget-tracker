@@ -268,7 +268,7 @@ app.post("/api/signup", async (req, res) => {
 
 
 // =========================
-// LOGIN (STRUCTURALLY FIXED)
+// LOGIN
 // =========================
 
 app.post("/api/login", (req, res) => {
@@ -375,7 +375,7 @@ app.post("/api/login", (req, res) => {
 
             });
 
-        } // Added missing callback closing bracket here
+        }
     );
 
 });
@@ -618,3 +618,7 @@ app.post(
                     return res.status(500).json({
 
                         error:
+                            "Failed to add transaction"
+
+                    });
+

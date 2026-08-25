@@ -26,7 +26,7 @@ app.use(express.urlencoded({
 }));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || "fallback-secret-key",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
 
@@ -69,12 +69,7 @@ const db = mysql.createPool({
 
     connectionLimit: 10,
 
-    queueLimit: 0,
-
-    ssl: process.env.DB_HOST && process.env.DB_HOST !== "localhost" ? {
-        minVersion: "TLSv1.2",
-        rejectUnauthorized: true
-    } : null
+    queueLimit: 0
 
 });
 
@@ -326,7 +321,7 @@ app.post("/api/login", (req, res) => {
             }
 
 
-            const user = results;
+            const user = results[0];
 
 
             const passwordMatch =
@@ -521,78 +516,35 @@ app.get(
 // =========================
 
 app.post("/api/transactions", requireLogin, (req, res) => {
-
-    const {
-        type,
-        category,
-        description,
-        amount,
-        transaction_date
-    } = req.body;
-
+    const { type, category, description, amount, transaction_date } = req.body;
 
     if (!type || !category || !amount || !transaction_date) {
-
-        return res.status(400).json({
-
-            error: "Please fill all required fields"
-
-        });
-
+        return res.status(400).json({ error: "Missing fields" });
     }
 
-
     const sql = `
-        INSERT INTO transactions
-        (user_id, type, category, description, amount, transaction_date)
+        INSERT INTO transactions (user_id, type, category, description, amount, transaction_date)
         VALUES (?, ?, ?, ?, ?, ?)
     `;
 
-
     db.query(
         sql,
-        [
-            req.session.userId,
-            type,
-            category,
-            description,
-            amount,
-            transaction_date
-        ],
+        [req.session.userId, type, category, description, amount, transaction_date],
         (err, result) => {
-
             if (err) {
-
                 console.error(err);
-
-                return res.status(500).json({
-
-                    error: "Failed to add transaction"
-
-                });
-
+                return res.status(500).json({ error: "Database error" });
             }
-
-
-            res.json({
-
-                message: "Transaction added successfully",
-
-                transactionId: result.insertId
-
-            });
-
+            res.json({ message: "Success", id: result.insertId });
         }
     );
-
 });
 
 
 // ==========================================
-// CATCH-ALL ROUTE (FIXED FOR PATH-TO-REGEXP V8)
+// CATCH-ALL ROUTE (EXPRESS 5 WILDCARD SETUP)
 // ==========================================
 
-// FIX: path-to-regexp v8 specifies global catch-all routing via "/*path" instead of "/:path*"
 app.get("/*path", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -604,3 +556,5 @@ app.get("/*path", (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
+});

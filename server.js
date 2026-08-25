@@ -26,7 +26,6 @@ app.use(express.urlencoded({
 }));
 
 app.use(session({
-    // FIX: Resolves the 'secret option required' session crash if process.env.SESSION_SECRET is blank
     secret: process.env.SESSION_SECRET || "fallback-production-encryption-secret-string-key",
     resave: false,
     saveUninitialized: false,
@@ -72,7 +71,6 @@ const db = mysql.createPool({
 
     queueLimit: 0,
     
-    // FIX: Enforces secure TLS 1.2 handshakes to solve the 'insecure transport prohibited' error on TiDB Cloud
     ssl: process.env.DB_HOST && process.env.DB_HOST !== "localhost" ? {
         minVersion: "TLSv1.2",
         rejectUnauthorized: true
@@ -270,7 +268,7 @@ app.post("/api/signup", async (req, res) => {
 
 
 // =========================
-// LOGIN
+// LOGIN (STRUCTURALLY FIXED)
 // =========================
 
 app.post("/api/login", (req, res) => {
@@ -316,7 +314,7 @@ app.post("/api/login", (req, res) => {
             }
 
 
-            if (results.length === 0) {
+            if (!results || results.length === 0) {
 
                 return res.status(401).json({
 
@@ -377,7 +375,7 @@ app.post("/api/login", (req, res) => {
 
             });
 
-        }
+        } // Added missing callback closing bracket here
     );
 
 });
@@ -615,3 +613,8 @@ app.post(
 
                 if (err) {
 
+                    console.error(err);
+
+                    return res.status(500).json({
+
+                        error:

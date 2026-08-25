@@ -57,12 +57,12 @@ const db = mysql.createPool({
 
     host: process.env.DB_HOST,
 
-    // Mapped to match your custom Render environment keys exactly
-    user: process.env.DB_USERNAME,
+    // FIX: Realigned to use your active DB_USER and DB_NAME dashboard keys flawlessly
+    user: process.env.DB_USER,
 
     password: process.env.DB_PASSWORD,
 
-    database: process.env.DB_DATABASE,
+    database: process.env.DB_NAME,
 
     port: process.env.DB_PORT || 3306,
 
@@ -72,7 +72,6 @@ const db = mysql.createPool({
 
     queueLimit: 0,
 
-    // Forces secure TLS 1.2+ parameters required by TiDB Cloud clusters
     ssl: process.env.DB_HOST && process.env.DB_HOST !== "localhost" ? {
         minVersion: "TLSv1.2",
         rejectUnauthorized: true
@@ -328,7 +327,7 @@ app.post("/api/login", (req, res) => {
             }
 
 
-            const user = results[0];
+            const user = results;
 
 
             const passwordMatch =
@@ -590,13 +589,20 @@ app.post("/api/transactions", requireLogin, (req, res) => {
 });
 
 
-// ==========================================
-// CATCH-ALL ROUTE (EXPRESS 5 COMPLIANT)
-// ==========================================
+// =========================
+// CATCH-ALL ROUTE
+// =========================
 
-// Configured securely to compile wildcard routes flawlessly under Node v24
 app.get("/*path", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 
+// =========================
+// START SERVER
+// =========================
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
+});
